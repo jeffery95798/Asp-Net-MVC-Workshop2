@@ -1,0 +1,101 @@
+﻿@model IEnumerable<test.Models.Book>
+@{
+    ViewBag.Title = "Index";
+}
+<div id="window" style="display:none">
+    <form id="book_form">
+        書名：<input id="products1" style="width: 80%;"><br><br>
+        圖書類別：<input id="products2" style="width: 80%;"><br><br>
+        借閱狀態：<input id="products3" style="width: 80%;"><br><br>
+        <button type="button" class="k-button k-primary btn-add-book" id="save_book">查詢</button>
+    </form>
+</div>
+<span id="undo" class="k-button hide-on-narrow">查詢</span><br>
+<div id="book_grid"></div>
+<div class="BOX" style="display:none">
+    <ul id="list">
+        @foreach (var item in (List<test.Models.BookSearchArg>)ViewBag.SearchResult)
+        {
+            <li id="@item.BOOK_ID">@item.BOOK_NAME|@item.BOOK_BOUGHT_DATE|@item.BOOK_CLASS_ID|@item.BOOK_STATUS</li>
+        }
+    </ul>
+</div>
+
+<script>
+    var book = [{ "Id": 0, "Name":""}],book1=[];
+    var myWindow = $("#window"), undo = $("#undo");
+    for (i = 1; i <= $("#list>li").length; i++) {
+        s = document.getElementById(i).innerHTML.split("|");
+        if (s[0] != "") {
+            book.push({ "Id": i, "Name": s[0] ,"day" : s[1] ,"class" : s[2] , "status": s[3]});
+            book1.push({ "Id": i, "Name": s[0] ,"day" : s[1] ,"class" : s[2] , "status": s[3]});
+        }
+    }
+
+    undo.click(function () {
+        myWindow.data("kendoWindow").center().open();
+    });
+
+    $("#window").kendoWindow({
+        width: "600px",
+        title: "查詢書籍",
+        visible: false,
+    });
+    $("#products1").kendoDropDownList({
+        filter: "startswith",
+        dataTextField: "Name",
+        dataValueField: "Id",
+        noDataTemplate: "沒有找到相關數據!",
+        dataSource: book
+    });
+
+    $("#products2").kendoDropDownList({
+        dataTextField: "Name",
+        dataValueField: "Id",
+        dataSource: [{ Id: "0", Name: "" },
+                     { Id: "1", Name: "Banking" }, { Id: "2", Name: "Database" },
+                     { Id: "3", Name: "Dataware House" }, { Id: "4", Name: "EIS" },
+                     { Id: "5", Name: "Internet" }, { Id: "6", Name: "Languages" },
+                     { Id: "7", Name: "Laws And Rules" }, { Id: "8", Name: "Management" },
+                     { Id: "9", Name: "Marketing" }, { Id: "10", Name: "Networking" },
+                     { Id: "11", Name: "Operating System" }, { Id: "12", Name: "Security" },
+                     { Id: "13", Name: "Software Engineering" }, { Id: "14", Name: "System Integration" },
+                     { Id: "15", Name: "應用系統整合" }, { Id: "16", Name: "Others" },
+                     { Id: "17", Name: "大陸相關書籍" }, { Id: "18", Name: "內部訓練課程光碟" },
+                     { Id: "19", Name: "研討會/產品介紹光碟" }, { Id: "20", Name: "Menu 操作手冊" },
+                     { Id: "21", Name: "公司內部各項活動光碟" }, { Id: "22", Name: "家庭保健" },
+                     { Id: "23", Name: "休閒旅遊" }, { Id: "24", Name: "客戶案例分享" }
+                    ]
+    });
+
+    $("#products3").kendoDropDownList({
+        dataTextField: "Name",
+        dataValueField: "Id",
+        dataSource: [{ Id: "0", Name: "" },
+                     { Id: "1", Name: "可以借出" }, { Id: "2", Name: "已借出" },
+                     { Id: "3", Name: "不可借出" }, { Id: "4", Name: "已借出(未領)" },
+                     ]
+    });
+    //kendoGrid
+    $("#book_grid").kendoGrid({
+        dataSource: {//資料來源
+            type: "odata",
+            data: book1,
+            pageSize: 9,
+        },
+        height: 550,
+        toolbar: "圖書分類",
+        pageable: {//分頁選單
+            input: true,
+            numeric: false
+        },
+        columns: [
+            {field: "Id", title: "書籍編號", },
+            {field: "class", title: "書籍類別", },
+            {field: "Name", title: "書籍名稱", },
+            {field: "day", title: "購書日期", },
+            {field: "status", title: "借閱狀態", }
+        ],
+        editable: true,
+    });
+</script>

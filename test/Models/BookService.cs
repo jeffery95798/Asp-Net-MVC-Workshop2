@@ -14,55 +14,84 @@ namespace test.Models
             return
                 System.Configuration.ConfigurationManager.ConnectionStrings["DBConnStr"].ConnectionString.ToString();
         }
-
-        
-        /// 新增Book
-        /// <returns>BookID</returns>
-        public int InsertBook(Models.Book book)
+        public List<Models.BookSearchArg> getsql()
         {
-            string sql = @" INSERT INTO BOOK_DATA
-						 (
-						    BOOK_NAME,BOOK_CLASS_ID,BOOK_AUTHOR,BOOK_BOUGHT_DATE,BOOK_PUBLISHER,BOOK_NOTE,BOOK_STATUS,BOOK_KEEPER,
-                            CREATE_DATE,CREATE_USER,MODIFY_DATE,MODIFY_USER
-						 )
-						VALUES
-						(
-							@BOOK_NAME,@BOOK_CLASS_ID,@BOOK_AUTHOR,@BOOK_BOUGHT_DATE,@BOOK_PUBLISHER,@BOOK_NOTE,@BOOK_STATUS,@BOOK_KEEPER,
-                            @CREATE_DATE,@CREATE_USER,@MODIFY_DATE,@MODIFY_USER
-						)
-						Select SCOPE_IDENTITY()";
-            int BookId;
+            DataTable dt = new DataTable();
+            string sql = @"SELECT * 
+                           FROM BOOK_DATA,BOOK_CLASS,BOOK_CODE 
+                           WHERE BOOK_DATA.BOOK_CLASS_ID=BOOK_CLASS.BOOK_CLASS_ID AND BOOK_DATA.BOOK_STATUS=BOOK_CODE.CODE_ID";
             using (SqlConnection conn = new SqlConnection(this.GetDBConnectionString()))
             {
                 conn.Open();
                 SqlCommand cmd = new SqlCommand(sql, conn);
-                cmd.Parameters.Add(new SqlParameter("@BOOK_NAME", book.BOOK_NAME));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_CLASS_ID", book.BOOK_CLASS_ID));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_AUTHOR", book.BOOK_AUTHOR));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_BOUGHT_DATE", book.BOOK_BOUGHT_DATE));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_PUBLISHER", book.BOOK_PUBLISHER));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_NOTE", book.BOOK_NOTE));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_STATUS", book.BOOK_STATUS));
-                cmd.Parameters.Add(new SqlParameter("@BOOK_KEEPER", book.BOOK_KEEPER));
-                cmd.Parameters.Add(new SqlParameter("@CREATE_DATE", book.CREATE_DATE));
-                cmd.Parameters.Add(new SqlParameter("@CREATE_USER", book.CREATE_USER));
-                cmd.Parameters.Add(new SqlParameter("@MODIFY_DATE", book.MODIFY_DATE));
-                cmd.Parameters.Add(new SqlParameter("@MODIFY_USER", book.MODIFY_USER));
-                BookId = Convert.ToInt32(cmd.ExecuteScalar());
+                SqlDataAdapter sqlAdapter = new SqlDataAdapter(cmd);
+                sqlAdapter.Fill(dt);
                 conn.Close();
             }
-            return BookId;
+            return this.putmodels(dt);
+        }
+        private List<Models.BookSearchArg> putmodels(DataTable bookData)
+        {
+            List<Models.BookSearchArg> result = new List<BookSearchArg>();
+            foreach (DataRow row in bookData.Rows)
+            {
+                result.Add(new BookSearchArg()
+                {
+                    BOOK_NAME = row["BOOK_NAME"].ToString(),
+                    BOOK_ID = row["BOOK_ID"].ToString(),
+                    BOOK_CLASS_NAME = row["BOOK_CLASS_NAME"].ToString(),
+                    BOOK_BOUGHT_DATE = row["BOOK_BOUGHT_DATE"].ToString(),
+                    CODE_NAME = row["CODE_NAME"].ToString(),
+                    BOOK_KEEPER = row["BOOK_KEEPER"].ToString()
+                });
+            }
+            return result;
+        }
+        /// 新增Book
+        /// <returns>BookID</returns>
+        public void InsertBook(string BOOK_NAME, string BOOK_AUTHOR, string BOOK_PUBLISHER, string BOOK_NOTE, string BOOK_BOUGHT_DATE, string BOOK_CLASS_ID)
+        {
+            try
+            {
+                string sql = @" INSERT INTO BOOK_DATA
+						     (
+						        BOOK_NAME,BOOK_AUTHOR,BOOK_PUBLISHER,BOOK_NOTE,BOOK_BOUGHT_DATE,BOOK_CLASS_ID,BOOK_STATUS
+						     )
+						    VALUES
+						    (
+							    @BOOK_NAME,@BOOK_AUTHOR,@BOOK_PUBLISHER,@BOOK_NOTE,@BOOK_BOUGHT_DATE,@BOOK_CLASS_ID,@BOOK_STATUS,'A'
+						    )
+						    Select SCOPE_IDENTITY()";
+                using (SqlConnection conn = new SqlConnection(this.GetDBConnectionString()))
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(sql, conn);
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_NAME", BOOK_NAME));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_AUTHOR", BOOK_AUTHOR));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_PUBLISHER", BOOK_PUBLISHER));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_NOTE", BOOK_NOTE));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_BOUGHT_DATE", BOOK_BOUGHT_DATE));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_CLASS_ID", BOOK_CLASS_ID));
+                    cmd.ExecuteNonQuery();
+                    conn.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
 
+
         /// <summary>
-        /// 刪除客戶
+        /// 刪除
         /// </summary>
         public void DeleteBookById(string BookId)
         {
             try
             {
-                string sql = "Delete FROM BOOK_DATA Where BookID=@BookId";
+                string sql = "Delete FROM BOOK_DATA Where Book_ID=@BookId";
                 using (SqlConnection conn = new SqlConnection(this.GetDBConnectionString()))
                 {
                     conn.Open();
@@ -78,37 +107,46 @@ namespace test.Models
             }
         }
 
-        public List<Models.BookSearchArg> GetBookByCondtioin()
+        /// <summary>
+        /// 修改
+        /// </summary>
+        public void UpdateBook(string BOOK_ID, string BOOK_NAME, string BOOK_AUTHOR, string BOOK_PUBLISHER, string BOOK_NOTE, string BOOK_BOUGHT_DATE, string BOOK_CLASS_ID, string BOOK_STATUS, string BOOK_KEEPER)
         {
-            DataTable dt = new DataTable();
-            string sql = @"SELECT * 
-                           FROM BOOK_DATA";
-            using (SqlConnection conn = new SqlConnection(this.GetDBConnectionString()))
+            try
             {
-                conn.Open();
-                SqlCommand cmd = new SqlCommand(sql, conn);
-                SqlDataAdapter sqlAdapter = new SqlDataAdapter(cmd);
-                sqlAdapter.Fill(dt);
-                conn.Close();
+                string sql = @"UPDATE BOOK_DATA
+                                 SET  BOOK_NAME=@BOOK_NAME,
+                                      BOOK_AUTHOR=@BOOK_AUTHOR,
+                                      BOOK_PUBLISHER=@BOOK_PUBLISHER,
+                                      BOOK_NOTE=@BOOK_NOTE,
+                                      BOOK_BOUGHT_DATE=@BOOK_BOUGHT_DATE,
+                                      BOOK_CLASS_ID=@BOOK_CLASS_ID,
+                                      BOOK_STATUS=@BOOK_STATUS,
+                                      BOOK_KEEPER=@BOOK_KEEPER
+
+                                WHERE BOOK_ID = @BOOK_ID";
+                using (SqlConnection conn = new SqlConnection(this.GetDBConnectionString()))
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(sql, conn);
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_NAME", BOOK_NAME));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_AUTHOR", BOOK_AUTHOR));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_PUBLISHER", BOOK_PUBLISHER));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_NOTE", BOOK_NOTE));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_BOUGHT_DATE", BOOK_BOUGHT_DATE));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_CLASS_ID", BOOK_CLASS_ID));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_STATUS", BOOK_STATUS));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_KEEPER", BOOK_KEEPER));
+                    cmd.Parameters.Add(new SqlParameter("@BOOK_ID", BOOK_ID));
+                    cmd.ExecuteNonQuery();
+                    conn.Close();
+                }
             }
-            return this.MapBookDataToList(dt);
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
-        private List<Models.BookSearchArg> MapBookDataToList(DataTable bookData)
-        {
-            List<Models.BookSearchArg> result = new List<BookSearchArg>();
-            foreach (DataRow row in bookData.Rows)
-            {
-                result.Add(new BookSearchArg()
-                {
-                    BOOK_ID = row["BOOK_ID"].ToString(),
-                    BOOK_NAME = row["BOOK_NAME"].ToString(),
-                    BOOK_CLASS_ID = row["BOOK_CLASS_ID"].ToString(),
-                    BOOK_BOUGHT_DATE = row["BOOK_BOUGHT_DATE"].ToString(),
-                    BOOK_STATUS = row["BOOK_STATUS"].ToString(),
-                });
-            }
-            return result;
-        }
     }
 }
